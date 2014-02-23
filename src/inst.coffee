@@ -1,4 +1,6 @@
 exports.inst = new (->
+    pack = this
+
     this.Inst = (i) ->
         inst = i
         this.U32 = -> inst
@@ -57,6 +59,10 @@ exports.inst = new (->
     this.FnSrav = 0x07
 
     mask32 = 0xffffffff
+
+    this.Nreg = 32
+    this.Nfreg = this.Nreg
+    this.RegPC = this.Nreg - 1
 
     rInstList = makeInstList(
         FnAdd: (c, f) ->
@@ -170,9 +176,38 @@ exports.inst = new (->
             c.WriteReg(f.rd, t >>> f.shamt)
             return
         
-        # TODO: here
+        FnSllv: (c, f) ->
+            s = c.ReadReg(f.rs)
+            t = c.ReadReg(f.rt)
+            if s > 32 || s < 0
+                c.WriteReg(f.rd, 0)
+            else
+                c.WriteReg(f.rd, t << s)
+            return
+
+        FnSrlv: (c, f) ->
+            s = c.ReadReg(f.rs)
+            t = c.ReadReg(f.rt)
+            if s > 32 || s < 0
+                c.WriteReg(f.rd, 0)
+            else
+                c.WriteReg(f.rd, t >>> s)
+            return
+
+        FnSrav: (c, f) ->
+            s = c.ReadReg(f.rs)
+            t = c.ReadReg(f.rt)
+            if s > 32 || s < 0
+                c.WriteReg(f.rd, t >> 31)
+            else
+                c.WriteReg(f.rd, t >> s)
+            return
     )
-    
+
+    memAddr = (c, f) -> ((c.ReadReg(f.rs) + f.ims) >> 0)
+    signExt = (i) -> (i << 16 >> 16)
+    signExt8 = (i) -> (i << 24 >> 24)
+
     instList = makeInstList(
         OpRinst: (c, f) ->
             inst = f.inst.U32()
@@ -181,7 +216,116 @@ exports.inst = new (->
             funct = inst & 0x3f
 
             rInstList[funct](c, f)
+            return
+
+        OpJ: (c, f) ->
+            pc = c.ReadReg(pack.RegPC)
+            inst = f.inst.U32()
+            pc = (pc + (inst << 6 >> 4)) >> 0
+            c.WriteReg(pack.RegPC, pc)
+            return
+
+        OpBeq: (c, f) ->
+            s = c.ReadReg(f.rs)
+            t = c.ReadReg(f.rt)
+            if s == t
+                pc = c.ReadReg(pack.RegPC)
+                pc = (pc + f.ims) >> 0
+                c.WriteReg(pack.RegPC, pc)
+            return
+
+        OpBne: (c, f) ->
+            s = c.ReadReg(f.rs)
+            t = c.ReadReg(f.rt)
+            if s != t
+                pc = c.ReadReg(pack.RegPC)
+                pc = (pc + f.ims) >> 0
+                c.WriteReg(pack.RegPC, pc)
+            return
+     
+        OpAddi: (c, f) ->
+            s = c.ReadReg(f.rs)
+            c.WriteReg(f.rt, (s + f.ims) >> 0)
+            return
+
+        OpLui: (c, f) ->
+            t = c.ReadReg(f.rt)
+            t = (t & 0xffff) | (f.im << 16)
+            c.WriteReg(f.rt, t)
+            return
+
+        OpAndi: (c, f) ->
+            s = c.ReadReg(f.rs)
+            c.WriteReg(f.rt, s & f.im)
+            return
+        
+        OpOri: (c, f) ->
+            s = c.ReadReg(f.rs)
+            c.WriteReg(f.rt, s | f.im)
+            return
+
+        OpSlti: (c, f) ->
+            s = c.ReadReg(f.rs) >> 0
+            if s < f.ims
+                c.WriteReg(f.rt, 1)
+            else
+                c.WriteReg(f.rt, 0)
+            return
+
+        OpLw: (c, f) ->
+            addr = memAddr(c, f)
+            c.WriteReg(f.rt, c.ReadU32(addr))
+            return
+
+        OpLhs: (c, f) ->
+            addr = memAddr(c, f)
+            c.WriteReg(f.rt, signExt(c.ReadU16(addr)))
+            return
+
+        OpLhu: (c, f) ->
+            addr = memAddr(c, f)
+            c.WriteReg(f.rt, c.ReadU16(addr))
+            return
+
+        OpLbs: (c, f) ->
+            addr = memAddr(c, f)
+            c.WriteReg(f.rt, signExt8(c.ReadU8(addr)))
+            return
+        
+        OpLbu: (c, f) ->
+            addr = memAddr(c, f)
+            c.WriteReg(f.rt, c.ReadU8(addr))
+            return
+
+        OpSw: (c, f) ->
+            addr = memAddr(c, f)
+            t = c.ReadReg(f.rt)
+            c.WriteU32(addr, t)
+            return
+
+        OpSh: (c, f) ->
+            addr = memAddr(c, f)
+            t = c.ReadReg(f.rt) & 0xffff
+            c.WriteU16(addr, t)
+            return
+
+        OpSb: (c, f) ->
+            addr = memAddr(c, f)
+            t = c.ReadReg(f.rt) & 0xff
+            c.WriteU8(addr, t)
+            return
     )
+
+    opInst = (c, f) ->
+        inst = f.inst.U32()
+        op = (inst >> 26) & 0x3f
+        f.rs = (inst >> 21) & 0x1f
+        f.rt = (inst >> 16) & 0x1f
+        f.im = inst & 0xffff
+        f.ims = signExt(inst)
+
+        instList[op](c, f)
+        return
 
     return
 )()
