@@ -1,15 +1,16 @@
-exports.mem = (->
+exports.mem = new (->
     align = exports.align
+    pack = this
 
     this.PageOffset = 12
-    this.PageSize = 1 << PageOffset
-    this.PageMask = PageSize - 1
+    this.PageSize = 1 << this.PageOffset
+    this.PageMask = this.PageSize - 1
 
-    this.PageStart = (i) -> (i << PageOffset)
-    this.PageId = (i) -> (i >> PageOffset)
+    this.PageStart = (i) -> (i << this.PageOffset)
+    this.PageId = (i) -> (i >> this.PageOffset)
 
     this.DataPage = ->
-        bytes = new ArrayBuffer(PageSize)
+        bytes = new ArrayBuffer(this.PageSize)
         this.Read = (offset) -> bytes.getUint8 offset
         this.Write = (offset, b) -> bytes.setUint8 offset, b
         this.Bytes = bytes
@@ -20,12 +21,12 @@ exports.mem = (->
         this.Write = (offset, b) -> return
         return
 
-    noopPage = new NoopPage()
+    noopPage = new this.NoopPage()
 
     this.Align = (p) ->
         page = p
 
-        maskOffset = (offset) -> (offset & PageMask)
+        maskOffset = (offset) -> (offset & pack.PageMask)
         offset8 = (offset) -> maskOffset(offset)
         offset16 = (offset) -> align.U16(maskOffset(offset))
         offset32 = (offset) -> align.U32(maskOffset(offset))
@@ -71,7 +72,7 @@ exports.mem = (->
         thiz = this
 
         this.Get = (addr) ->
-            id = PageId(addr)
+            id = pack.PageId(addr)
             if !(id in pages)
                 return noopPage
             return pages[id]
