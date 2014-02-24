@@ -62,257 +62,224 @@ exports.inst = new (->
     pack.Nfunct = 64
     pack.Nop = 64
 
-    rInstList = makeInstList({
-        FnAdd: (c, f) ->
-            s = c.ReadReg(f.rs)
-            t = c.ReadReg(f.rt)
-            c.WriteReg(f.rd, (s + t) >> 0)
-            return
-
-        FnSub: (c, f) ->
-            s = c.ReadReg(f.rs)
-            t = c.ReadReg(f.rt)
-            c.WriteReg(f.rd, (s - t) >> 0)
-            return
-
-        FnAnd: (c, f) ->
-            s = c.ReadReg(f.rs)
-            t = c.ReadReg(f.rt)
-            c.WriteReg(f.rd, s & t)
-            return
-
-        Fnor: (c, f) ->
-            s = c.ReadReg(f.rs)
-            t = c.ReadReg(f.rt)
-            c.WriteReg(f.rd, s | t)
-            return
-
-        FnXor: (c, f) ->
-            s = c.ReadReg(f.rs)
-            t = c.ReadREg(f.rt)
-            c.WriteReg(f.rd, s ^ t)
-            return
-
-        FnNor: (c, f) ->
-            s = c.ReadReg(f.rs)
-            t = c.ReadReg(f.rt)
-            c.WriteReg(f.rd, ~(s | t))
-            return
-        
-        FnSlt: (c, f) ->
-            s = c.ReadReg(f.rs) >> 0
-            t = c.ReadReg(f.rt) >> 0
-            if s < t
-                v = 1
-            else
-                v = 0
-            c.WriteReg(f.rd, v)
-            return
-
-        FnMul: (c, f) ->
-            s = c.ReadReg(f.rs) >> 0
-            t = c.ReadReg(f.rt) >> 0
-            v = (s * t) & mask32
-            c.WriteReg(f.rd, v)
-            return
-
-        FnMulu: (c, f) ->
-            s = c.ReadReg(f.rs)
-            t = c.ReadReg(f.rt)
-            v = (s * t) & mask32
-            c.WriteReg(f.rd, v)
-            return
-
-        FnDiv: (c, f) ->
-            s = c.ReadReg(f.rs) >> 0
-            t = c.ReadReg(f.rt) >> 0
-            if t == 0
-                c.WriteReg(f.rd, 0)
-            else
-                c.WriteReg(f.rd, (s / t) >> 0)
-            return
-
-        FnDivu: (c, f) ->
-            s = c.ReadReg(f.rs)
-            t = c.ReadReg(f.rt)
-            if t == 0
-                c.WriteReg(f.rd, 0)
-            else
-                c.WriteReg(f.rd, (s / t) >> 0)
-            return
-
-        FnMod: (c, f) ->
-            s = c.ReadReg(f.rs) >> 0
-            t = c.ReadReg(f.rt) >> 0
-            if t == 0
-                c.WriteReg(f.rd, 0)
-            else
-                c.WriteReg(f.rd, s % t)
-            return
-
-        FnModu: (c, f) ->
-            s = c.ReadReg(f.rs)
-            t = c.ReadReg(f.rt)
-            if t == 0
-                c.WriteReg(f.rd, 0)
-            else
-                c.WriteReg(f.rd, s % t)
-            return
-
-        FnSll: (c, f) ->
-            t = c.ReadReg(f.rt)
-            c.WriteReg(f.rd, t << f.shamt)
-            return
-
-        FnSrl: (c, f) ->
-            t = c.ReadReg(f.rt)
-            c.WriteReg(f.rd, t >> f.shamt)
-            return
-
-        FnSra: (c, f) ->
-            t = c.ReadReg(f.rt)
-            c.WriteReg(f.rd, t >>> f.shamt)
-            return
-        
-        FnSllv: (c, f) ->
-            s = c.ReadReg(f.rs)
-            t = c.ReadReg(f.rt)
-            if s > 32 || s < 0
-                c.WriteReg(f.rd, 0)
-            else
-                c.WriteReg(f.rd, t << s)
-            return
-
-        FnSrlv: (c, f) ->
-            s = c.ReadReg(f.rs)
-            t = c.ReadReg(f.rt)
-            if s > 32 || s < 0
-                c.WriteReg(f.rd, 0)
-            else
-                c.WriteReg(f.rd, t >>> s)
-            return
-
-        FnSrav: (c, f) ->
-            s = c.ReadReg(f.rs)
-            t = c.ReadReg(f.rt)
-            if s > 32 || s < 0
-                c.WriteReg(f.rd, t >> 31)
-            else
-                c.WriteReg(f.rd, t >> s)
-            return
-    }, pack.Nfunct)
+    insts = {}
+    insts[pack.FnAdd] = (c, f) ->
+        s = c.ReadReg(f.rs)
+        t = c.ReadReg(f.rt)
+        c.WriteReg(f.rd, (s + t) >> 0)
+        return
+    insts[pack.FnSub] = (c, f) ->
+        s = c.ReadReg(f.rs)
+        t = c.ReadReg(f.rt)
+        c.WriteReg(f.rd, (s - t) >> 0)
+        return
+    insts[pack.FnAnd] = (c, f) ->
+        s = c.ReadReg(f.rs)
+        t = c.ReadReg(f.rt)
+        c.WriteReg(f.rd, s & t)
+        return
+    insts[pack.Fnor] = (c, f) ->
+        s = c.ReadReg(f.rs)
+        t = c.ReadReg(f.rt)
+        c.WriteReg(f.rd, s | t)
+        return
+    insts[pack.FnXor] = (c, f) ->
+        s = c.ReadReg(f.rs)
+        t = c.ReadREg(f.rt)
+        c.WriteReg(f.rd, s ^ t)
+        return
+    insts[pack.FnNor] = (c, f) ->
+        s = c.ReadReg(f.rs)
+        t = c.ReadReg(f.rt)
+        c.WriteReg(f.rd, ~(s | t))
+        return
+    insts[pack.FnSlt] = (c, f) ->
+        s = c.ReadReg(f.rs) >> 0
+        t = c.ReadReg(f.rt) >> 0
+        if s < t
+            v = 1
+        else
+            v = 0
+        c.WriteReg(f.rd, v)
+        return
+    insts[pack.FnMul] = (c, f) ->
+        s = c.ReadReg(f.rs) >> 0
+        t = c.ReadReg(f.rt) >> 0
+        v = (s * t) & mask32
+        c.WriteReg(f.rd, v)
+        return
+    insts[pack.FnMulu] = (c, f) ->
+        s = c.ReadReg(f.rs)
+        t = c.ReadReg(f.rt)
+        v = (s * t) & mask32
+        c.WriteReg(f.rd, v)
+        return
+    insts[pack.FnDiv] = (c, f) ->
+        s = c.ReadReg(f.rs) >> 0
+        t = c.ReadReg(f.rt) >> 0
+        if t == 0
+            c.WriteReg(f.rd, 0)
+        else
+            c.WriteReg(f.rd, (s / t) >> 0)
+        return
+    insts[pack.FnDivu] = (c, f) ->
+        s = c.ReadReg(f.rs)
+        t = c.ReadReg(f.rt)
+        if t == 0
+            c.WriteReg(f.rd, 0)
+        else
+            c.WriteReg(f.rd, (s / t) >> 0)
+        return
+    insts[pack.FnMod] = (c, f) ->
+        s = c.ReadReg(f.rs) >> 0
+        t = c.ReadReg(f.rt) >> 0
+        if t == 0
+            c.WriteReg(f.rd, 0)
+        else
+            c.WriteReg(f.rd, s % t)
+        return
+    insts[pack.FnModu] = (c, f) ->
+        s = c.ReadReg(f.rs)
+        t = c.ReadReg(f.rt)
+        if t == 0
+            c.WriteReg(f.rd, 0)
+        else
+            c.WriteReg(f.rd, s % t)
+        return
+    insts[pack.FnSll] = (c, f) ->
+        t = c.ReadReg(f.rt)
+        c.WriteReg(f.rd, t << f.shamt)
+        return
+    insts[pack.FnSrl] = (c, f) ->
+        t = c.ReadReg(f.rt)
+        c.WriteReg(f.rd, t >> f.shamt)
+        return
+    insts[pack.FnSra] = (c, f) ->
+        t = c.ReadReg(f.rt)
+        c.WriteReg(f.rd, t >>> f.shamt)
+        return
+    insts[pack.FnSllv] = (c, f) ->
+        s = c.ReadReg(f.rs)
+        t = c.ReadReg(f.rt)
+        if s > 32 || s < 0
+            c.WriteReg(f.rd, 0)
+        else
+            c.WriteReg(f.rd, t << s)
+        return
+    insts[pack.FnSrlv] = (c, f) ->
+        s = c.ReadReg(f.rs)
+        t = c.ReadReg(f.rt)
+        if s > 32 || s < 0
+            c.WriteReg(f.rd, 0)
+        else
+            c.WriteReg(f.rd, t >>> s)
+        return
+    insts[pack.FnSrav] = (c, f) ->
+        s = c.ReadReg(f.rs)
+        t = c.ReadReg(f.rt)
+        if s > 32 || s < 0
+            c.WriteReg(f.rd, t >> 31)
+        else
+            c.WriteReg(f.rd, t >> s)
+        return
+    rInstList = makeInstList(insts, pack.Nfunct)
 
     memAddr = (c, f) -> ((c.ReadReg(f.rs) + f.ims) >> 0)
     signExt = (i) -> (i << 16 >> 16)
     signExt8 = (i) -> (i << 24 >> 24)
 
-    instList = makeInstList({
-        OpRinst: (c, f) ->
-            inst = f.inst
-            f.rd = (inst >> 11) & 0x1f
-            f.shamt = (inst >> 6) & 0x1f
-            funct = inst & 0x3f
+    insts = {}
+    insts[pack.OpRinst] = (c, f) ->
+        inst = f.inst
+        f.rd = (inst >> 11) & 0x1f
+        f.shamt = (inst >> 6) & 0x1f
+        funct = inst & 0x3f
 
-            rInstList[funct](c, f)
-            return
-
-        OpJ: (c, f) ->
+        rInstList[funct](c, f)
+        return
+    insts[pack.OpJ] = (c, f) ->
+        pc = c.ReadReg(pack.RegPC)
+        inst = f.inst
+        pc = (pc + (inst << 6 >> 4)) >> 0
+        c.WriteReg(pack.RegPC, pc)
+        return
+    insts[pack.OpBeq] = (c, f) ->
+        s = c.ReadReg(f.rs)
+        t = c.ReadReg(f.rt)
+        if s == t
             pc = c.ReadReg(pack.RegPC)
-            inst = f.inst
-            pc = (pc + (inst << 6 >> 4)) >> 0
+            pc = (pc + f.ims) >> 0
             c.WriteReg(pack.RegPC, pc)
-            return
+        return
+    insts[pack.OpBne] = (c, f) ->
+        s = c.ReadReg(f.rs)
+        t = c.ReadReg(f.rt)
+        if s != t
+            pc = c.ReadReg(pack.RegPC)
+            pc = (pc + f.ims) >> 0
+            c.WriteReg(pack.RegPC, pc)
+        return
+    insts[pack.OpAddi] = (c, f) ->
+        s = c.ReadReg(f.rs)
+        c.WriteReg(f.rt, (s + f.ims) >> 0)
+        return
+    insts[pack.OpLui] = (c, f) ->
+        t = c.ReadReg(f.rt)
+        t = (t & 0xffff) | (f.im << 16)
+        c.WriteReg(f.rt, t)
+        return
+    insts[pack.OpAndi] = (c, f) ->
+        s = c.ReadReg(f.rs)
+        c.WriteReg(f.rt, s & f.im)
+        return
+    insts[pack.OpOri] = (c, f) ->
+        s = c.ReadReg(f.rs)
+        c.WriteReg(f.rt, s | f.im)
+        return
+    insts[pack.OpSlti] = (c, f) ->
+        s = c.ReadReg(f.rs) >> 0
+        if s < f.ims
+            c.WriteReg(f.rt, 1)
+        else
+            c.WriteReg(f.rt, 0)
+        return
+    insts[pack.OpLw] = (c, f) ->
+        addr = memAddr(c, f)
+        c.WriteReg(f.rt, c.ReadU32(addr))
+        return
+    insts[pack.OpLhs] = (c, f) ->
+        addr = memAddr(c, f)
+        c.WriteReg(f.rt, signExt(c.ReadU16(addr)))
+        return
+    insts[pack.OpLhu] = (c, f) ->
+        addr = memAddr(c, f)
+        c.WriteReg(f.rt, c.ReadU16(addr))
+        return
+    insts[pack.OpLbs] = (c, f) ->
+        addr = memAddr(c, f)
+        c.WriteReg(f.rt, signExt8(c.ReadU8(addr)))
+        return
+    insts[pack.OpLbu] = (c, f) ->
+        addr = memAddr(c, f)
+        c.WriteReg(f.rt, c.ReadU8(addr))
+        return
+    insts[pack.OpSw] = (c, f) ->
+        addr = memAddr(c, f)
+        t = c.ReadReg(f.rt)
+        c.WriteU32(addr, t)
+        return
+    insts[pack.OpSh] = (c, f) ->
+        addr = memAddr(c, f)
+        t = c.ReadReg(f.rt) & 0xffff
+        c.WriteU16(addr, t)
+        return
+    insts[pack.OpSb] = (c, f) ->
+        addr = memAddr(c, f)
+        t = c.ReadReg(f.rt) & 0xff
+        c.WriteU8(addr, t)
+        return
 
-        OpBeq: (c, f) ->
-            s = c.ReadReg(f.rs)
-            t = c.ReadReg(f.rt)
-            if s == t
-                pc = c.ReadReg(pack.RegPC)
-                pc = (pc + f.ims) >> 0
-                c.WriteReg(pack.RegPC, pc)
-            return
-
-        OpBne: (c, f) ->
-            s = c.ReadReg(f.rs)
-            t = c.ReadReg(f.rt)
-            if s != t
-                pc = c.ReadReg(pack.RegPC)
-                pc = (pc + f.ims) >> 0
-                c.WriteReg(pack.RegPC, pc)
-            return
-     
-        OpAddi: (c, f) ->
-            s = c.ReadReg(f.rs)
-            c.WriteReg(f.rt, (s + f.ims) >> 0)
-            return
-
-        OpLui: (c, f) ->
-            t = c.ReadReg(f.rt)
-            t = (t & 0xffff) | (f.im << 16)
-            c.WriteReg(f.rt, t)
-            return
-
-        OpAndi: (c, f) ->
-            s = c.ReadReg(f.rs)
-            c.WriteReg(f.rt, s & f.im)
-            return
-        
-        OpOri: (c, f) ->
-            s = c.ReadReg(f.rs)
-            c.WriteReg(f.rt, s | f.im)
-            return
-
-        OpSlti: (c, f) ->
-            s = c.ReadReg(f.rs) >> 0
-            if s < f.ims
-                c.WriteReg(f.rt, 1)
-            else
-                c.WriteReg(f.rt, 0)
-            return
-
-        OpLw: (c, f) ->
-            addr = memAddr(c, f)
-            c.WriteReg(f.rt, c.ReadU32(addr))
-            return
-
-        OpLhs: (c, f) ->
-            addr = memAddr(c, f)
-            c.WriteReg(f.rt, signExt(c.ReadU16(addr)))
-            return
-
-        OpLhu: (c, f) ->
-            addr = memAddr(c, f)
-            c.WriteReg(f.rt, c.ReadU16(addr))
-            return
-
-        OpLbs: (c, f) ->
-            addr = memAddr(c, f)
-            c.WriteReg(f.rt, signExt8(c.ReadU8(addr)))
-            return
-        
-        OpLbu: (c, f) ->
-            addr = memAddr(c, f)
-            c.WriteReg(f.rt, c.ReadU8(addr))
-            return
-
-        OpSw: (c, f) ->
-            addr = memAddr(c, f)
-            t = c.ReadReg(f.rt)
-            c.WriteU32(addr, t)
-            return
-
-        OpSh: (c, f) ->
-            addr = memAddr(c, f)
-            t = c.ReadReg(f.rt) & 0xffff
-            c.WriteU16(addr, t)
-            return
-
-        OpSb: (c, f) ->
-            addr = memAddr(c, f)
-            t = c.ReadReg(f.rt) & 0xff
-            c.WriteU8(addr, t)
-            return
-    }, pack.Nop)
+    instList = makeInstList(insts, pack.Nop)
 
     opInst = (c, f) ->
         inst = f.inst
@@ -356,7 +323,7 @@ exports.inst = new (->
         return ret
 
     pack.Jinst = (ad) ->
-        ret = (OpJ & 0x3f) << 26
+        ret = (pack.OpJ & 0x3f) << 26
         ret |= ad & 0x3ffffff
         return ret
 
@@ -365,7 +332,7 @@ exports.inst = new (->
             return "noop"
 
         op = (i >> 26) & 0x3f
-        if op == OpRinst
+        if op == pack.OpRinst
             rs = (i >> 21) & 0x1f
             rt = (i >> 16) & 0x1f
             rd = (i >> 11) & 0x1f
@@ -396,7 +363,7 @@ exports.inst = new (->
                 when pack.FnSrlv then return r3r "srlv"
                 when pack.FnSrav then return r3r "srav"
                 else return "noop-r"+funct
-        else if op == ObJ
+        else if op == pack.OpJ
             im = (i << 6) >> 6
             return "j "+im
         else

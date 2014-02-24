@@ -82,7 +82,7 @@ exports.mem = new (->
                 return noopPage
             return pages[id]
 
-        self.Valid = (addr) -> (PageId(addr) in pages)
+        self.Valid = (addr) -> (pack.PageId(addr) in pages)
         self.Align = (addr) -> new Align(self.Get(addr))
 
         self.WriteU8 = (addr, value) ->
@@ -96,8 +96,13 @@ exports.mem = new (->
         self.ReadU16 = (addr) -> self.Align(addr).ReadU16(addr)
         self.ReadU32 = (addr) -> self.Align(addr).ReadU32(addr)
 
-        self.Map = (addr, page) -> pages[PageId(addr)] = page; return
-        self.Unmap = (addr) -> delete pages[PageId(addr)]; return
+        self.Map = (addr, page) ->
+            pages[pack.PageId(addr)] = page
+            return
+
+        self.Unmap = (addr) ->
+            delete pages[pack.PageId(addr)]
+            return
         
         return
 
