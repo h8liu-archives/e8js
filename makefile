@@ -5,6 +5,7 @@ comp:
 		src/align.coffee \
 		src/mem.coffee \
 		src/inst.coffee \
+		src/vm.coffee \
 		#
 
 test:

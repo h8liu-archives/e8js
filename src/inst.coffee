@@ -299,6 +299,7 @@ exports.inst = new (->
             self.fields.inst = (inst >> 0)
             opInst(c, self.fields)
             return
+        return
 
     pack.Rinst = (s, t, d, funct) ->
         ret = (s & 0x1f) << 21

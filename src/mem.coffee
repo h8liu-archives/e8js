@@ -13,8 +13,10 @@ exports.mem = new (->
     pack.DataPage = ->
         self = this
         bytes = new ArrayBuffer(pack.PageSize)
-        self.Read = (offset) -> bytes.getUint8 offset
-        self.Write = (offset, b) -> bytes.setUint8 offset, b
+        view = new DataView(bytes)
+
+        self.Read = (offset) -> view.getUint8 offset
+        self.Write = (offset, b) -> view.setUint8 offset, b
         self.Bytes = bytes
         return
 
@@ -78,12 +80,12 @@ exports.mem = new (->
 
         self.Get = (addr) ->
             id = pack.PageId(addr)
-            if !(id in pages)
+            if !(id of pages)
                 return noopPage
             return pages[id]
 
         self.Valid = (addr) -> (pack.PageId(addr) in pages)
-        self.Align = (addr) -> new Align(self.Get(addr))
+        self.Align = (addr) -> new pack.Align(self.Get(addr))
 
         self.WriteU8 = (addr, value) ->
             self.Align(addr).WriteU8(addr, value)
@@ -105,6 +107,7 @@ exports.mem = new (->
             return
         
         return
-
+    
+    pack.NewPage = -> new pack.DataPage()
     return
 )()
