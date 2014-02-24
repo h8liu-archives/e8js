@@ -1,11 +1,6 @@
 exports.inst = new (->
     pack = this
 
-    this.Inst = (i) ->
-        inst = i
-        this.U32 = -> inst
-        return
-
     opNoop = (c, f) -> return
 
     makeInstList = (m, n) ->
@@ -64,7 +59,10 @@ exports.inst = new (->
     this.Nfreg = this.Nreg
     this.RegPC = this.Nreg - 1
 
-    rInstList = makeInstList(
+    this.Nfunct = 64
+    this.Nop = 64
+
+    rInstList = makeInstList({
         FnAdd: (c, f) ->
             s = c.ReadReg(f.rs)
             t = c.ReadReg(f.rt)
@@ -202,15 +200,15 @@ exports.inst = new (->
             else
                 c.WriteReg(f.rd, t >> s)
             return
-    )
+    }, pack.Nfunct)
 
     memAddr = (c, f) -> ((c.ReadReg(f.rs) + f.ims) >> 0)
     signExt = (i) -> (i << 16 >> 16)
     signExt8 = (i) -> (i << 24 >> 24)
 
-    instList = makeInstList(
+    instList = makeInstList({
         OpRinst: (c, f) ->
-            inst = f.inst.U32()
+            inst = f.inst
             f.rd = (inst >> 11) & 0x1f
             f.shamt = (inst >> 6) & 0x1f
             funct = inst & 0x3f
@@ -220,7 +218,7 @@ exports.inst = new (->
 
         OpJ: (c, f) ->
             pc = c.ReadReg(pack.RegPC)
-            inst = f.inst.U32()
+            inst = f.inst
             pc = (pc + (inst << 6 >> 4)) >> 0
             c.WriteReg(pack.RegPC, pc)
             return
@@ -314,10 +312,10 @@ exports.inst = new (->
             t = c.ReadReg(f.rt) & 0xff
             c.WriteU8(addr, t)
             return
-    )
+    }, pack.Nop)
 
     opInst = (c, f) ->
-        inst = f.inst.U32()
+        inst = f.inst
         op = (inst >> 26) & 0x3f
         f.rs = (inst >> 21) & 0x1f
         f.rt = (inst >> 16) & 0x1f
@@ -326,6 +324,107 @@ exports.inst = new (->
 
         instList[op](c, f)
         return
+
+    this.ALU = ->
+        thiz = this
+        this.fields = {}
+        this.Inst = (c, inst) ->
+            thiz.fields.inst = (inst >> 0)
+            opInst(c, thiz.fields)
+            return
+
+    this.Rinst = (s, t, d, funct) ->
+        ret = (s & 0x1f) << 21
+        ret |= (t & 0x1f) << 16
+        ret |= (d & 0x1f) << 11
+        ret |= funct & 0x3f
+        return ret
+
+    this.RinstShamt = (s, t, d, shamt, funct) ->
+        ret = (s & 0x1f) << 21
+        ret |= (t & 0x1f) << 16
+        ret |= (d & 0x1f) << 11
+        ret |= (shamt & 0x1f) << 6
+        ret |= funct & 0x3f
+        return ret
+
+    this.Iinst = (op, s, t, im) ->
+        ret = (op & 0x3f) << 26
+        ret |= (s & 0x1f) << 21
+        ret |= (t & 0x1f) << 16
+        ret |= im & 0xffff
+        return ret
+
+    this.Jinst = (ad) ->
+        ret = (OpJ & 0x3f) << 26
+        ret |= ad & 0x3ffffff
+        return ret
+
+    this.InstStr = (i) ->
+        if i == 0
+            return "noop"
+
+        op = (i >> 26) & 0x3f
+        if op == OpRinst
+            rs = (i >> 21) & 0x1f
+            rt = (i >> 16) & 0x1f
+            rd = (i >> 11) & 0x1f
+            shamt = (i >> 6) & 0x1f
+            funct = i & 0x3f
+            r3 = (op) -> (op+" $"+rd+", $"+rs+", $"+rt)
+            r3r = (op) -> (op+" $"+rd+", $"+rt+", $"+rs)
+            r3s = (op) -> (op+" $"+rd+", $"+rt+", "+shamt)
+
+            switch op
+                when pack.FnAdd then return r3 "add"
+                when pack.FnSub then return r3 "sub"
+                when pack.FnAnd then return r3 "and"
+                when pack.FnOr then return r3 "or"
+                when pack.FnXor then return r3 "xor"
+                when pack.FnNor then return r3 "nor"
+                when pack.FnSlt then return r3 "slt"
+                when pack.FnMul then return r3 "mul"
+                when pack.FnMulu then return r3 "mulu"
+                when pack.FnDiv then return r3 "div"
+                when pack.FnDiu then return r3 "divu"
+                when pack.FnMod then return r3 "mod"
+                when pack.FnModu then return r3 "modu"
+                when pack.FnSll then return r3s "sll"
+                when pack.FnSrl then return r3s "srl"
+                when pack.FnSra then return r3s "sra"
+                when pack.FnSllv then return r3r "sllv"
+                when pack.FnSrlv then return r3r "srlv"
+                when pack.FnSrav then return r3r "srav"
+                else return "noop-r"+funct
+        else if op == ObJ
+            im = (i << 6) >> 6
+            return "j "+im
+        else
+            rs = (i >> 21) & 0x1f
+            rt = (i >> 16) & 0x1f
+            im = i & 0xffff
+            ims = i << 16 >> 16
+            i2 = (op) -> (op+" $"+rt+", "+im)
+            i3sr = (op) -> (op+" $"+rs+", $"+rt+", "+ims)
+            i3s = (op) -> (op+" $"+rt+", $"+rs+", "+ims)
+            i3a = (op) -> (op+" $"+rt+", "+ims+"($"+rs+")")
+
+            switch op
+                when pack.OpBeq then return i3sr "beq"
+                when pack.OpBne then return i3sr "bne"
+                when pack.OpAddi then return i3s "addi"
+                when pack.OpSlti then return i3s "slti"
+                when pack.OpAndi then return i3s "andi"
+                when pack.OpOri then return i3s "ori"
+                when pack.OpLui then return i2 "lui"
+                when pack.OpLhs then return i3a "lhs"
+                when pack.OpLhu then return i3a "lhu"
+                when pack.OpLbu then return i3a "lbu"
+                when pack.OpSw then return i3a "sw"
+                when pack.OpSh then return i3a "sh"
+                when pack.OpSb then return i3a "sb"
+
+        return "noop-"+op
 
     return
 )()
