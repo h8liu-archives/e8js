@@ -1,29 +1,34 @@
 exports.mem = new (->
-    align = exports.align
     pack = this
 
-    this.PageOffset = 12
-    this.PageSize = 1 << this.PageOffset
-    this.PageMask = this.PageSize - 1
+    align = exports.align
 
-    this.PageStart = (i) -> (i << this.PageOffset)
-    this.PageId = (i) -> (i >> this.PageOffset)
+    pack.PageOffset = 12
+    pack.PageSize = 1 << pack.PageOffset
+    pack.PageMask = pack.PageSize - 1
 
-    this.DataPage = ->
-        bytes = new ArrayBuffer(this.PageSize)
-        this.Read = (offset) -> bytes.getUint8 offset
-        this.Write = (offset, b) -> bytes.setUint8 offset, b
-        this.Bytes = bytes
+    pack.PageStart = (i) -> (i << pack.PageOffset)
+    pack.PageId = (i) -> (i >> pack.PageOffset)
+
+    pack.DataPage = ->
+        self = this
+        bytes = new ArrayBuffer(pack.PageSize)
+        self.Read = (offset) -> bytes.getUint8 offset
+        self.Write = (offset, b) -> bytes.setUint8 offset, b
+        self.Bytes = bytes
         return
 
-    this.NoopPage = ->
-        this.Read = (offset) -> 0
-        this.Write = (offset, b) -> return
+    pack.NoopPage = ->
+        self = this
+        self.Read = (offset) -> 0
+        self.Write = (offset, b) -> return
         return
 
-    noopPage = new this.NoopPage()
+    noopPage = new pack.NoopPage()
 
-    this.Align = (p) ->
+    pack.Align = (p) ->
+        self = this
+
         page = p
 
         maskOffset = (offset) -> (offset & pack.PageMask)
@@ -58,36 +63,41 @@ exports.mem = new (->
             ret |= page.Read(offset + 3) << 24
             return ret
         
-        this.WriteU8 = (offset, value) -> writeU8(offset8(offset), value)
-        this.WriteU16 = (offset, value) -> writeU16(offset16(offset), value)
-        this.WriteU32 = (offset, value) -> writeU32(offset32(offset), value)
-        this.ReadU8 = (offset) -> readU8(offset8(offset))
-        this.ReadU16 = (offset) -> readU16(offset16(offset))
-        this.ReadU32 = (offset) -> readU32(offset32(offset))
+        self.WriteU8 = (offset, value) -> writeU8(offset8(offset), value)
+        self.WriteU16 = (offset, value) -> writeU16(offset16(offset), value)
+        self.WriteU32 = (offset, value) -> writeU32(offset32(offset), value)
+        self.ReadU8 = (offset) -> readU8(offset8(offset))
+        self.ReadU16 = (offset) -> readU16(offset16(offset))
+        self.ReadU32 = (offset) -> readU32(offset32(offset))
 
         return
 
-    this.Memory = ->
+    pack.Memory = ->
+        self = this
         pages = {}
-        thiz = this
 
-        this.Get = (addr) ->
+        self.Get = (addr) ->
             id = pack.PageId(addr)
             if !(id in pages)
                 return noopPage
             return pages[id]
 
-        this.Valid = (addr) -> (PageId(addr) in pages)
-        this.Align = (addr) -> new Align(thiz.Get(addr))
-        this.WriteU8 = (addr, value) -> thiz.Align(addr).WriteU8(addr, value)
-        this.WriteU16 = (addr, value) -> thiz.Align(addr).WriteU16(addr, value)
-        this.WriteU32 = (addr, value) -> thiz.Align(addr).WriteU32(addr, value)
-        this.ReadU8 = (addr) -> thiz.Align(addr).ReadU8(addr)
-        this.ReadU16 = (addr) -> thiz.Align(addr).ReadU16(addr)
-        this.ReadU32 = (addr) -> thiz.Align(addr).ReadU32(addr)
+        self.Valid = (addr) -> (PageId(addr) in pages)
+        self.Align = (addr) -> new Align(self.Get(addr))
 
-        this.Map = (addr, page) -> pages[PageId(addr)] = page; return
-        this.Unmap = (addr) -> delete pages[PageId(addr)]; return
+        self.WriteU8 = (addr, value) ->
+            self.Align(addr).WriteU8(addr, value)
+        self.WriteU16 = (addr, value) ->
+            self.Align(addr).WriteU16(addr, value)
+        self.WriteU32 = (addr, value) ->
+            self.Align(addr).WriteU32(addr, value)
+
+        self.ReadU8 = (addr) -> self.Align(addr).ReadU8(addr)
+        self.ReadU16 = (addr) -> self.Align(addr).ReadU16(addr)
+        self.ReadU32 = (addr) -> self.Align(addr).ReadU32(addr)
+
+        self.Map = (addr, page) -> pages[PageId(addr)] = page; return
+        self.Unmap = (addr) -> delete pages[PageId(addr)]; return
         
         return
 

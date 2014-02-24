@@ -11,56 +11,56 @@ exports.inst = new (->
             ret[i] = m
         return ret
 
-    this.OpRinst = 0
-    this.OpJ = 0x02
-    this.OpBeq = 0x04
-    this.OpBne = 0x05
+    pack.OpRinst = 0
+    pack.OpJ = 0x02
+    pack.OpBeq = 0x04
+    pack.OpBne = 0x05
 
-    this.OpAddi = 0x08
-    this.OpSlti = 0x0A
-    this.OpAndi = 0x0C
-    this.OpOri = 0x0D
-    this.OpLui = 0x0F
+    pack.OpAddi = 0x08
+    pack.OpSlti = 0x0A
+    pack.OpAndi = 0x0C
+    pack.OpOri = 0x0D
+    pack.OpLui = 0x0F
     
-    this.OpLw = 0x23
-    this.OpLhs = 0x21
-    this.OpLhu = 0x25
-    this.OpLbs = 0x20
-    this.OpLbu = 0x24
-    this.OpSw = 0x2B
-    this.OpSh = 0x29
-    this.OpSb = 0x28
+    pack.OpLw = 0x23
+    pack.OpLhs = 0x21
+    pack.OpLhu = 0x25
+    pack.OpLbs = 0x20
+    pack.OpLbu = 0x24
+    pack.OpSw = 0x2B
+    pack.OpSh = 0x29
+    pack.OpSb = 0x28
 
-    this.FnAdd = 0x20
-    this.FnSub = 0x22
-    this.FnAnd = 0x24
-    this.FnOr = 0x25
-    this.FnXor = 0x26
-    this.FnNor = 0x27
-    this.FnSlt = 0x2A
-    this.FnMul = 0x18
+    pack.FnAdd = 0x20
+    pack.FnSub = 0x22
+    pack.FnAnd = 0x24
+    pack.FnOr = 0x25
+    pack.FnXor = 0x26
+    pack.FnNor = 0x27
+    pack.FnSlt = 0x2A
+    pack.FnMul = 0x18
 
-    this.FnMulu = 0x19
-    this.FnDiv = 0x1A
-    this.FnDivu = 0x1B
-    this.FnMod = 0x1C
-    this.FnModu = 0x1D
+    pack.FnMulu = 0x19
+    pack.FnDiv = 0x1A
+    pack.FnDivu = 0x1B
+    pack.FnMod = 0x1C
+    pack.FnModu = 0x1D
     
-    this.FnSll = 0x00
-    this.FnSrl = 0x02
-    this.FnSra = 0x03
-    this.FnSllv = 0x04
-    this.FnSrlv = 0x06
-    this.FnSrav = 0x07
+    pack.FnSll = 0x00
+    pack.FnSrl = 0x02
+    pack.FnSra = 0x03
+    pack.FnSllv = 0x04
+    pack.FnSrlv = 0x06
+    pack.FnSrav = 0x07
 
     mask32 = 0xffffffff
 
-    this.Nreg = 32
-    this.Nfreg = this.Nreg
-    this.RegPC = this.Nreg - 1
+    pack.Nreg = 32
+    pack.Nfreg = pack.Nreg
+    pack.RegPC = pack.Nreg - 1
 
-    this.Nfunct = 64
-    this.Nop = 64
+    pack.Nfunct = 64
+    pack.Nop = 64
 
     rInstList = makeInstList({
         FnAdd: (c, f) ->
@@ -325,22 +325,22 @@ exports.inst = new (->
         instList[op](c, f)
         return
 
-    this.ALU = ->
-        thiz = this
-        this.fields = {}
-        this.Inst = (c, inst) ->
-            thiz.fields.inst = (inst >> 0)
-            opInst(c, thiz.fields)
+    pack.ALU = ->
+        self = this
+        self.fields = {}
+        self.Inst = (c, inst) ->
+            self.fields.inst = (inst >> 0)
+            opInst(c, self.fields)
             return
 
-    this.Rinst = (s, t, d, funct) ->
+    pack.Rinst = (s, t, d, funct) ->
         ret = (s & 0x1f) << 21
         ret |= (t & 0x1f) << 16
         ret |= (d & 0x1f) << 11
         ret |= funct & 0x3f
         return ret
 
-    this.RinstShamt = (s, t, d, shamt, funct) ->
+    pack.RinstShamt = (s, t, d, shamt, funct) ->
         ret = (s & 0x1f) << 21
         ret |= (t & 0x1f) << 16
         ret |= (d & 0x1f) << 11
@@ -348,19 +348,19 @@ exports.inst = new (->
         ret |= funct & 0x3f
         return ret
 
-    this.Iinst = (op, s, t, im) ->
+    pack.Iinst = (op, s, t, im) ->
         ret = (op & 0x3f) << 26
         ret |= (s & 0x1f) << 21
         ret |= (t & 0x1f) << 16
         ret |= im & 0xffff
         return ret
 
-    this.Jinst = (ad) ->
+    pack.Jinst = (ad) ->
         ret = (OpJ & 0x3f) << 26
         ret |= ad & 0x3ffffff
         return ret
 
-    this.InstStr = (i) ->
+    pack.InstStr = (i) ->
         if i == 0
             return "noop"
 
