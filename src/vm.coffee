@@ -108,7 +108,7 @@ exports.vm = new (->
         
         self.buf = ""
         self.Write = (b) ->
-            if b == 13
+            if b == 10
                 console.log(self.buf)
                 self.buf = ""
             else
@@ -130,6 +130,7 @@ exports.vm = new (->
         memory = new mem.Memory()
         alu = new inst.ALU()
         sys = new pack.SysPage()
+        memory.Map(0, sys)
 
         self.Stdout = new pack.Console()
         
@@ -169,7 +170,7 @@ exports.vm = new (->
             sys.ClearError()
             pc = regs.IncPC()
             i = memory.ReadU32(pc)
-            console.log(pc, i, inst.InstStr(i))
+            # console.log(pc, i, inst.InstStr(i), regs.ReadReg(2))
             alu.Inst(self, i)
             sys.FlushStdout(self.Stdout)
                 
