@@ -84,7 +84,7 @@ exports.mem = new (->
                 return noopPage
             return pages[id]
 
-        self.Valid = (addr) -> (pack.PageId(addr) in pages)
+        self.Valid = (addr) -> (pack.PageId(addr) of pages)
         self.Align = (addr) -> new pack.Align(self.Get(addr))
 
         self.WriteU8 = (addr, value) ->
