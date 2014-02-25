@@ -30,8 +30,7 @@ exports.mem = new (->
 
     pack.Align = (p) ->
         self = this
-
-        page = p
+        self.page = p
 
         maskOffset = (offset) -> (offset & pack.PageMask)
         offset8 = (offset) -> maskOffset(offset)
@@ -39,30 +38,30 @@ exports.mem = new (->
         offset32 = (offset) -> align.U32(maskOffset(offset))
 
         writeU8 = (offset, value) ->
-            page.Write(offset, value)
+            self.page.Write(offset, value)
             return
 
         writeU16 = (offset, value) ->
-            page.Write(offset, value & 0xff)
-            page.Write(offset + 1, (value >> 8) & 0xff)
+            self.page.Write(offset, value & 0xff)
+            self.page.Write(offset + 1, (value >> 8) & 0xff)
             return
 
         writeU32 = (offset, value) ->
-            page.Write(offset, value & 0xff)
-            page.Write(offset + 1, (value >> 8) & 0xff)
-            page.Write(offset + 2, (value >> 16) & 0xff)
-            page.Write(offset + 3, (value >> 24) & 0xff)
+            self.page.Write(offset, value & 0xff)
+            self.page.Write(offset + 1, (value >> 8) & 0xff)
+            self.page.Write(offset + 2, (value >> 16) & 0xff)
+            self.page.Write(offset + 3, (value >> 24) & 0xff)
 
-        readU8 = (offset) -> page.Read(offset)
+        readU8 = (offset) -> self.page.Read(offset)
         readU16 = (offset) ->
-            ret = page.Read(offset)
-            ret |= page.Read(offset + 1) << 8
+            ret = self.page.Read(offset)
+            ret |= self.page.Read(offset + 1) << 8
             return ret
         readU32 = (offset) ->
-            ret = page.Read(offset)
-            ret |= page.Read(offset + 1) << 8
-            ret |= page.Read(offset + 2) << 16
-            ret |= page.Read(offset + 3) << 24
+            ret = self.page.Read(offset)
+            ret |= self.page.Read(offset + 1) << 8
+            ret |= self.page.Read(offset + 2) << 16
+            ret |= self.page.Read(offset + 3) << 24
             return ret
         
         self.WriteU8 = (offset, value) -> writeU8(offset8(offset), value)
@@ -77,15 +76,23 @@ exports.mem = new (->
     pack.Memory = ->
         self = this
         pages = {}
+        align_ = new pack.Align()
+        self.NoAutoAlloc = false
 
         self.Get = (addr) ->
             id = pack.PageId(addr)
             if !(id of pages)
-                return noopPage
+                if self.NoAutoAlloc
+                    return noopPage
+                p = pack.NewPage()
+                pages[id] = p
+                return p
             return pages[id]
 
         self.Valid = (addr) -> (pack.PageId(addr) of pages)
-        self.Align = (addr) -> new pack.Align(self.Get(addr))
+        self.Align = (addr) -> 
+            align_.page = self.Get(addr)
+            return align_
 
         self.WriteU8 = (addr, value) ->
             self.Align(addr).WriteU8(addr, value)
