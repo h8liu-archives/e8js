@@ -224,8 +224,7 @@ exports.inst = new (->
         c.WriteReg(f.rt, (s + f.ims) >> 0)
         return
     insts[pack.OpLui] = (c, f) ->
-        t = c.ReadReg(f.rt)
-        t = (t & 0xffff) | (f.im << 16)
+        t = f.im << 16
         c.WriteReg(f.rt, t)
         return
     insts[pack.OpAndi] = (c, f) ->
