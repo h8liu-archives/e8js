@@ -1,12 +1,8 @@
 .PHONY: comp test
 
-comp:
-	coffee -j e8.js -c \
-		src/align.coffee \
-		src/mem.coffee \
-		src/inst.coffee \
-		src/vm.coffee \
-		#
+e8.js: src/*.coffee
+	coffee -j e8.js -c src/*.coffee
 
-test:
+test: e8.js
 	coffee test/align.coffee
+	coffee test/vm.coffee

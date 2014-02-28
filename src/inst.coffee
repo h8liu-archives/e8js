@@ -7,8 +7,8 @@ exports.inst = new (->
         ret = []
         for i in [0..n-1]
             ret.push(opNoop)
-        for i in m
-            ret[i] = m
+        for i of m
+            ret[i] = m[i]
         return ret
 
     pack.OpRinst = 0
@@ -208,7 +208,7 @@ exports.inst = new (->
         t = c.ReadReg(f.rt)
         if s == t
             pc = c.ReadReg(pack.RegPC)
-            pc = (pc + f.ims) >> 0
+            pc = (pc + (f.ims << 2)) >> 0
             c.WriteReg(pack.RegPC, pc)
         return
     insts[pack.OpBne] = (c, f) ->
@@ -216,7 +216,7 @@ exports.inst = new (->
         t = c.ReadReg(f.rt)
         if s != t
             pc = c.ReadReg(pack.RegPC)
-            pc = (pc + f.ims) >> 0
+            pc = (pc + (f.ims << 2)) >> 0
             c.WriteReg(pack.RegPC, pc)
         return
     insts[pack.OpAddi] = (c, f) ->
@@ -287,7 +287,7 @@ exports.inst = new (->
         f.rt = (inst >> 16) & 0x1f
         f.im = inst & 0xffff
         f.ims = signExt(inst)
-
+        
         instList[op](c, f)
         return
 
@@ -342,7 +342,7 @@ exports.inst = new (->
             r3r = (op) -> (op+" $"+rd+", $"+rt+", $"+rs)
             r3s = (op) -> (op+" $"+rd+", $"+rt+", "+shamt)
 
-            switch op
+            switch funct
                 when pack.FnAdd then return r3 "add"
                 when pack.FnSub then return r3 "sub"
                 when pack.FnAnd then return r3 "and"

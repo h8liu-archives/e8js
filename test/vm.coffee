@@ -15,7 +15,7 @@ c = vm.New()
 dpage = mem.NewPage()
 ipage = mem.NewPage()
 
-str = "Hello, world."
+str = "Hello, world.\n"
 nstr = str.length
 for i in [0..(nstr-1)]
     dpage.Write(i, str.charCodeAt(i))
