@@ -31,15 +31,16 @@ w = (i) ->
     a.WriteU32(offset, i)
     offset += 4
 
+# A hello world program
 w(ri(0, 0, 1, inst.FnAdd))
 w(ii(inst.OpLbu, 1, 2, 0x2000))
 w(ii(inst.OpBeq, 2, 0, 0x0005))
-w(ii(inst.OpLbu, 0, 3, 0x0005))
+w(ii(inst.OpLbu, 0, 3, 0x0009))
 w(ii(inst.OpBne, 3, 0, 0xfffe))
-w(ii(inst.OpSb, 0, 2, 0x0005))
+w(ii(inst.OpSb, 0, 2, 0x0009))
 w(ii(inst.OpAddi, 1, 1, 0x0001))
 w(ji(-7))
-w(ii(inst.OpSb, 0, 0, 0x0004))
+w(ii(inst.OpSb, 0, 0, 0x0008))
 
 c.Map(mem.PageStart(1), ipage)
 c.Map(mem.PageStart(2), dpage)

@@ -62,20 +62,20 @@ exports.vm = new (->
             self.HaltValue = 0xff
 
         self.Read = (offset) ->
-            if offset < 4
+            if offset < 8
                 addrError()
                 return 0
 
             switch offset
-                when 5
+                when 9
                     if stdout.length < cap
                         return 0
                     return 1
-                when 6
+                when 10
                     if stdin.length > 0
                         return 0
                     return 1
-                when 7
+                when 11
                     if stdin.length > 0
                         return stdin.shift()
                     return 0
@@ -83,15 +83,15 @@ exports.vm = new (->
 
         self.Write = (offset, b) ->
             b = b & 0xff
-            if offset < 4
+            if offset < 8
                 addrError()
                 return
 
             switch offset
-                when 4
+                when 8
                     self.Halt = true
                     self.HaltValue = b
-                when 5
+                when 9
                     if stdout.length < cap
                         stdout.push(b)
             return
