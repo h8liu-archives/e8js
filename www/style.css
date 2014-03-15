@@ -1,1 +1,5 @@
 @import url(http://fonts.googleapis.com/css?family=Open+Sans);
+
+canvas {
+    background: #eee;
+}
