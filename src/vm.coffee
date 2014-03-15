@@ -11,21 +11,21 @@ exports.vm = new (->
         regs = new Uint32Array(inst.Nreg)
         fregs = new Float64Array(inst.Nfreg)
         
-        self.ReadReg = (a) -> regs.get(a)
-        self.ReadFreg = (a) -> fregs.get(a)
+        self.ReadReg = (a) -> regs[a]
+        self.ReadFreg = (a) -> fregs[a]
 
         self.WriteReg = (a, v) ->
             v = v >> 0
             if a == 0
                 # do nothing
             else if a == inst.RegPC
-                regs.set(a, align.U32(v))
+                regs[a] = align.U32(v)
             else
-                regs.set(a, v)
+                regs[a] = v
             return
         
         self.WriteFreg = (a, v) ->
-            fregs.set(a, v)
+            fregs[a] = v
             return
 
         self.IncPC = (a, v) ->

@@ -1,20 +1,22 @@
 Terminal = (canvas) ->
-    thiz = this
+    self = this
 
     dpr = window.devicePixelRatio
     ctx = canvas.getContext('2d')
     fontSize = 13
-    charHeight = fontSize * dpr
-    ctx.font = '' + charHeight + 'px Consolas'
+    fontSize *= dpr
+    charHeight = fontSize
+    lineHeight = charHeight + 2 * dpr
+    ctx.font = '' + fontSize + 'px Consolas'
     charWidth = ctx.measureText('M').width
 
     ncol = 80
-    nrow = 50
+    nrow = 40
     col = 0
     row = 0
 
     width = ncol * charWidth / dpr
-    height = nrow * charHeight / dpr
+    height = nrow * lineHeight / dpr
 
     canvas.style.width = '' + width + 'px'
     canvas.style.height = '' + height + 'px'
@@ -22,11 +24,43 @@ Terminal = (canvas) ->
     canvas.width = width * dpr
     canvas.height = height * dpr
 
+    ctx.font = '' + charHeight + 'px Consolas'
+    ctx.fillStyle = '#000'
+    ctx.textBaseline = 'top'
+
+    this.incCursor = ->
+        col += 1
+        if col == ncol
+            col = 0
+            row += 1
+        if row == nrow
+            row = 0
+        return
+
+    this.putEndl = ->
+        row += 1
+        col = 0
+        if row == nrow
+            row = 0
+        return
+
     this.putc = (c) ->
+        if c == '\n'
+            self.putEndl()
+            return
         x = col * charWidth
-        y = row * charHeight
+        y = row * lineHeight + dpr
         ctx.clearRect(x, y, charWidth, charHeight)
-        ctx.fillText(c, x, y + charHeight)
+        ctx.fillText(c, x, y)
+        self.incCursor()
+        return
+
+    this.clearCurLine = ->
+        ctx.clearRect(0, row * lineHeight, charWidth * ncol, charHeight)
+        return
+
+    this.Write = (b) ->
+        self.putc(String.fromCharCode(b))
         return
 
     bound = (max, x) ->
@@ -43,14 +77,15 @@ Terminal = (canvas) ->
     
     this.print = (msg) ->
         chars = msg.split('')
-        ctx.font = '' + charHeight + 'px Consolas'
-        ctx.fillStyle = '#000'
-        row = 0
-        col = 0
+        self.clearCurLine()
         for c in chars
-            thiz.putc(c)
-            col += 1
+            self.putc(c)
         return
+
+    this.println = (msg) ->
+        self.print(msg)
+        self.putEndl()
+
     return
 
 Console = new Terminal($("canvas#console")[0])
@@ -65,12 +100,62 @@ isSpecialKey = (code) ->
 
 keydown = (e) ->
     code = event.which
-    Console.print('keycode = ' + code + '   ')
-    if isSpecialKey(e)
+    Debugger.println('keycode = ' + code + '   ')
+    if isSpecialKey(code)
         e.preventDefault()
 
 $(window).keydown(keydown)
 
-# cons.print("this is the console.")
-Debugger.print("this is the debugger.")
+test = ->
+    inst = exports.inst
+    vm = exports.vm
+    mem = exports.mem
 
+    c = vm.New()
+    c.Stdout = Console
+
+    dpage = mem.NewPage()
+    ipage = mem.NewPage()
+    
+    str = "Hello, world.\n"
+    nstr = str.length
+    for i in [0..(nstr-1)]
+        dpage.Write(i, str.charCodeAt(i))
+
+    ri = inst.Rinst
+    ii = inst.Iinst
+    ji = inst.Jinst
+
+    a = new mem.Align(ipage)
+
+    offset = 0
+    w = (i) ->
+        a.WriteU32(offset, i)
+        offset += 4
+
+    # A hello world program
+    w(ri(0, 0, 1, inst.FnAdd))
+    w(ii(inst.OpLbu, 1, 2, 0x2000))
+    w(ii(inst.OpBeq, 2, 0, 0x0005))
+    w(ii(inst.OpLbu, 0, 3, 0x0009))
+    w(ii(inst.OpBne, 3, 0, 0xfffe))
+    w(ii(inst.OpSb, 0, 2, 0x0009))
+    w(ii(inst.OpAddi, 1, 1, 0x0001))
+    w(ji(-7))
+    w(ii(inst.OpSb, 0, 0, 0x0008))
+
+    c.Map(mem.PageStart(1), ipage)
+    c.Map(mem.PageStart(2), dpage)
+    
+    # o(c.ReadU32(mem.PageStart(1)) != 0)
+
+    c.SetPC(mem.PageStart(1))
+    used = c.Run(150)
+
+    # o(used <= 150)
+    # o(c.RIP())
+
+# cons.print("this is the console.")
+Debugger.println("this is the debugger.")
+
+test()
