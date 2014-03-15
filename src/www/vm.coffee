@@ -26,7 +26,7 @@ Terminal = (canvas) ->
 
     ctx.font = '' + charHeight + 'px Consolas'
     ctx.fillStyle = '#000'
-    ctx.textBaseline = 'top'
+    ctx.textBaseline = 'bottom'
 
     this.incCursor = ->
         col += 1
@@ -51,12 +51,12 @@ Terminal = (canvas) ->
         x = col * charWidth
         y = row * lineHeight + dpr
         ctx.clearRect(x, y, charWidth, charHeight)
-        ctx.fillText(c, x, y)
+        ctx.fillText(c, x, y + charHeight)
         self.incCursor()
         return
 
     this.clearCurLine = ->
-        ctx.clearRect(0, row * lineHeight, charWidth * ncol, charHeight)
+        ctx.clearRect(0, row * lineHeight, charWidth * ncol, lineHeight)
         return
 
     this.Write = (b) ->
@@ -77,7 +77,7 @@ Terminal = (canvas) ->
     
     this.print = (msg) ->
         chars = msg.split('')
-        self.clearCurLine()
+        # self.clearCurLine()
         for c in chars
             self.putc(c)
         return
@@ -100,11 +100,30 @@ isSpecialKey = (code) ->
 
 keydown = (e) ->
     code = event.which
+    Debugger.locate(0, 0)
+    Debugger.clearCurLine()
     Debugger.println('keycode = ' + code + '   ')
     if isSpecialKey(code)
         e.preventDefault()
 
 $(window).keydown(keydown)
+
+printRegs = (c) ->
+    # Debugger.locate(2, 0)
+    for i in [0..31]
+        line = Math.floor(i / 4)
+        col = i % 4
+        Debugger.locate(2 + line, col * 15)
+        v = c.ReadReg(i)
+        if i < 10
+            istr = '0' + i
+        else
+            istr = '' + i
+        vstr = v.toString(16)
+        while vstr.length < 8
+            vstr = '0' + vstr
+        Debugger.print(istr + ':' + vstr)
+    return
 
 test = ->
     inst = exports.inst
@@ -151,6 +170,7 @@ test = ->
 
     c.SetPC(mem.PageStart(1))
     used = c.Run(150)
+    printRegs(c)
 
     # o(used <= 150)
     # o(c.RIP())
