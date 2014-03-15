@@ -42,7 +42,6 @@ Terminal = (canvas) ->
         return
     
     this.print = (msg) ->
-        console.log(msg)
         chars = msg.split('')
         ctx.font = '' + charHeight + 'px Consolas'
         ctx.fillStyle = '#000'
@@ -54,8 +53,24 @@ Terminal = (canvas) ->
         return
     return
 
-cons = new Terminal($("canvas#console")[0])
-debug = new Terminal($("canvas#debug")[0])
+Console = new Terminal($("canvas#console")[0])
+Debugger = new Terminal($("canvas#debug")[0])
 
-cons.print("this is the console.")
-debug.print("this is the debugger.")
+isSpecialKey = (code) ->
+    if code >= 37 && code <= 40
+        return true
+    if code == 13 || code == 32
+        return true
+    return false
+
+keydown = (e) ->
+    code = event.which
+    Console.print('keycode = ' + code + '   ')
+    if isSpecialKey(e)
+        e.preventDefault()
+
+$(window).keydown(keydown)
+
+# cons.print("this is the console.")
+Debugger.print("this is the debugger.")
+
